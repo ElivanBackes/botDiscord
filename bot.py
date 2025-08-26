@@ -5,6 +5,7 @@ from discord import FFmpegPCMAudio
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import platform
 
 # 🔄 Debug opcional: verifica se o arquivo principal existe
 print(Path("D:/Usuarios/eliva/Documents/Meus_projetos/botSetName/audios/ruliEntrance.mp3").exists())
@@ -12,7 +13,11 @@ print(Path("D:/Usuarios/eliva/Documents/Meus_projetos/botSetName/audios/ruliEntr
 # 📦 Carregar variáveis do .env
 load_dotenv()
 
-FFMPEG_PATH = r"D:\Usuarios\eliva\Documents\Meus_projetos\botSetName\folderDiversidade\ffmpeg\bin\ffmpeg.exe"
+if platform.system() == "Windows":
+    FFMPEG_PATH = r"D:\Usuarios\eliva\Documents\Meus_projetos\botSetName\folderDiversidade\ffmpeg\bin\ffmpeg.exe"
+else:
+    FFMPEG_PATH = "ffmpeg"
+    
 TOKEN = os.getenv("DISCORD_TOKEN")
 VOICE_CHANNEL_ID = int(os.getenv("VOICE_CHANNEL_ID"))
 
