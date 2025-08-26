@@ -1,0 +1,12 @@
+# Ignorar ambiente virtual
+venv/
+
+# Ignorar variáveis de ambiente
+.env
+
+# Ignorar cache do Python
+__pycache__/
+*.pyc
+
+# Pasta que pode ser ignorada
+folderDiversidade/

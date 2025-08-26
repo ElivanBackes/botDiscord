@@ -1,0 +1,92 @@
+import discord
+from discord.ext import commands
+import asyncio
+from discord import FFmpegPCMAudio
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+print(Path("D:/Usuarios/eliva/Documents/Meus_projetos/botSetName/audios/ruliEntrance.mp3").exists())
+
+# Carregar variáveis do .env
+load_dotenv()
+
+# Mapear os áudios personalizados dos usuários
+user_audio_map = {}
+for key, val in os.environ.items():
+    if key.startswith("USER_AUDIO_"):
+        path = Path(val.strip())
+        user_id = int(key.split('_')[-1])
+        user_audio_map[user_id] = str(path.resolve())
+
+FFMPEG_PATH = r"D:\Usuarios\eliva\Documents\Meus_projetos\botSetName\folderDiversidade\ffmpeg\bin\ffmpeg.exe"  # Ajuste conforme seu local
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+VOICE_CHANNEL_ID = int(os.getenv("VOICE_CHANNEL_ID"))
+
+intents = discord.Intents.default()
+intents.voice_states = True
+intents.guilds = True
+intents.members = True
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+
+@bot.event
+async def on_ready():
+    print(f"🤖 Bot conectado como {bot.user} (ID: {bot.user.id})")
+    print("🔍 Áudios configurados para usuários:")
+    for user_id, path in user_audio_map.items():
+        print(f" - {user_id}: {path} {'✅ Existe' if Path(path).exists() else '❌ NÃO encontrado'}")
+    
+    
+    #print(f"🔍 Áudios configurados para usuários:")
+    #for user_id, audio_path in user_audio_map.items():
+    #    print(f" - {user_id}: {audio_path} {'✅ Existe' if Path(audio_path).exists() else '❌ NÃO encontrado'}")
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+
+    print(f"[DEBUG] {member.name} alterou estado de voz: {before.channel} → {after.channel}")
+
+    if after.channel and after.channel.id == VOICE_CHANNEL_ID and before.channel != after.channel:
+        print(f"🎧 {member.name} entrou no canal monitorado")
+
+        user_audio = user_audio_map.get(member.id)
+        if not user_audio:
+            print(f"ℹ️ Nenhum áudio configurado para {member.name} (ID: {member.id})")
+            return
+
+        audio_path = Path(user_audio)
+        if not audio_path.exists():
+            print(f"❌ Arquivo de áudio não encontrado: {audio_path}")
+            return
+
+        try:
+            print("🔄 Tentando conectar ao canal de voz...")
+            vc = await after.channel.connect()
+            print("✅ Conectado ao canal de voz com sucesso!")
+
+            def after_playing(error):
+                if error:
+                    print(f"❌ Erro durante reprodução do áudio: {error}")
+                else:
+                    print("✅ Áudio finalizado")
+
+            #print(f"▶️ Iniciando reprodução do áudio: {audio_path}")
+            print(f"▶️ Iniciando reprodução do áudio: {audio_path} (exists={audio_path.exists()})")
+            vc.play(FFmpegPCMAudio(str(audio_path), executable=FFMPEG_PATH), after=after_playing)
+
+            while vc.is_playing():
+                await asyncio.sleep(1)
+
+            print("🔇 Desconectando do canal de voz...")
+            await vc.disconnect()
+            print("✅ Desconectado com sucesso")
+
+        except Exception as e:
+            print(f"❌ Erro inesperado: {e}")
+
+bot.run(TOKEN)
